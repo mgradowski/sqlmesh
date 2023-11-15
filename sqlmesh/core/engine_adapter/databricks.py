@@ -125,12 +125,19 @@ class DatabricksEngineAdapter(GetCurrentCatalogFromFunctionMixin, SparkEngineAda
         self.execute(query)
         return self.cursor.fetchall_arrow().to_pandas()
 
-    def fetchdf(
-        self, query: t.Union[exp.Expression, str], quote_identifiers: bool = False
+    def fetchdf(  # type: ignore[override]
+        self,
+        query: t.Union[exp.Expression, str],
+        quote_identifiers: bool = False,
+        chunksize: None = None,
     ) -> pd.DataFrame:
         """
         Returns a Pandas DataFrame from a query or expression.
         """
+        if chunksize is not None:
+            raise NotImplementedError(
+                f"`chunksize` is not implemented for {self.__class__.__name__}"
+            )
         df = self._fetch_native_df(query, quote_identifiers=quote_identifiers)
         if not isinstance(df, pd.DataFrame):
             return df.toPandas()

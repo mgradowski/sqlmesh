@@ -1267,11 +1267,37 @@ class EngineAdapter:
             self.execute(query, quote_identifiers=quote_identifiers)
             return self.cursor.fetchdf()
 
+    @t.overload
     def fetchdf(
-        self, query: t.Union[exp.Expression, str], quote_identifiers: bool = False
+        self,
+        query: t.Union[exp.Expression, str],
+        quote_identifiers: bool = ...,
+        chunksize: None = ...,
     ) -> pd.DataFrame:
+        ...
+
+    @t.overload
+    def fetchdf(
+        self,
+        query: t.Union[exp.Expression, str],
+        quote_identifiers: bool = ...,
+        *,
+        chunksize: int,
+    ) -> t.Iterator[pd.DataFrame]:
+        ...
+
+    def fetchdf(
+        self,
+        query: t.Union[exp.Expression, str],
+        quote_identifiers: bool = False,
+        chunksize: t.Optional[int] = None,
+    ) -> t.Union[pd.DataFrame, t.Iterator[pd.DataFrame]]:
         """Fetches a Pandas DataFrame from the cursor"""
         df = self._fetch_native_df(query, quote_identifiers=quote_identifiers)
+        if chunksize is not None:
+            raise NotImplementedError(
+                f"`chunksize` is not implemented for {self.__class__.__name__}"
+            )
         if not isinstance(df, pd.DataFrame):
             raise NotImplementedError(
                 "The cursor's `fetch_native_df` method is not returning a pandas DataFrame. Need to update `fetchdf` so a Pandas DataFrame is returned"

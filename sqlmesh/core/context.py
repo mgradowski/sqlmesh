@@ -152,12 +152,31 @@ class BaseContext(abc.ABC):
         """
         return self._model_tables[model_name]
 
+    @t.overload
+    def fetchdf(
+        self,
+        query: t.Union[exp.Expression, str],
+        quote_identifiers: bool = ...,
+        chunksize: None = ...,
+    ) -> pd.DataFrame:
+        ...
+
+    @t.overload
+    def fetchdf(
+        self,
+        query: t.Union[exp.Expression, str],
+        quote_identifiers: bool = ...,
+        *,
+        chunksize: int,
+    ) -> t.Iterator[pd.DataFrame]:
+        ...
+
     def fetchdf(
         self,
         query: t.Union[exp.Expression, str],
         quote_identifiers: bool = False,
         chunksize: t.Optional[int] = None,
-    ) -> pd.DataFrame:
+    ) -> t.Union[pd.DataFrame, t.Iterator[pd.DataFrame]]:
         """Fetches a dataframe given a sql string or sqlglot expression.
 
         Args:

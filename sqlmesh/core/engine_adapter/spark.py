@@ -276,9 +276,16 @@ class SparkEngineAdapter(HiveMetastoreTablePropertiesMixin):
         table_name_id.set("this", table_name_id.this.replace("__temp_", "temp_"))
         return table
 
-    def fetchdf(
-        self, query: t.Union[exp.Expression, str], quote_identifiers: bool = False
+    def fetchdf(  # type: ignore[override]
+        self,
+        query: t.Union[exp.Expression, str],
+        quote_identifiers: bool = False,
+        chunksize: None = None,
     ) -> pd.DataFrame:
+        if chunksize is not None:
+            raise NotImplementedError(
+                f"`chunksize` is not implemented for {self.__class__.__name__}"
+            )
         return self.fetch_pyspark_df(query, quote_identifiers=quote_identifiers).toPandas()
 
     def fetch_pyspark_df(
