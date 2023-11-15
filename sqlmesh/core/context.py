@@ -153,7 +153,10 @@ class BaseContext(abc.ABC):
         return self._model_tables[model_name]
 
     def fetchdf(
-        self, query: t.Union[exp.Expression, str], quote_identifiers: bool = False
+        self,
+        query: t.Union[exp.Expression, str],
+        quote_identifiers: bool = False,
+        chunksize: t.Optional[int] = None,
     ) -> pd.DataFrame:
         """Fetches a dataframe given a sql string or sqlglot expression.
 
@@ -164,7 +167,11 @@ class BaseContext(abc.ABC):
         Returns:
             The default dataframe is Pandas, but for Spark a PySpark dataframe is returned.
         """
-        return self.engine_adapter.fetchdf(query, quote_identifiers=quote_identifiers)
+        return self.engine_adapter.fetchdf(
+            query,
+            quote_identifiers=quote_identifiers,
+            chunksize=chunksize,
+        )
 
     def fetch_pyspark_df(
         self, query: t.Union[exp.Expression, str], quote_identifiers: bool = False
