@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import typing as t
 
+import pandas as pd
 from sqlglot import exp
 from sqlglot.optimizer.qualify_columns import quote_identifiers
 
@@ -12,7 +13,7 @@ from sqlmesh.utils.errors import SQLMeshError
 
 if t.TYPE_CHECKING:
     from sqlmesh.core._typing import TableName
-    from sqlmesh.core.engine_adapter._typing import DF, Query
+    from sqlmesh.core.engine_adapter._typing import Query
     from sqlmesh.core.engine_adapter.base import QueryOrDF
 
 logger = logging.getLogger(__name__)
@@ -141,9 +142,31 @@ class LogicalReplaceQueryMixin(EngineAdapter):
 
 
 class PandasNativeFetchDFSupportMixin(EngineAdapter):
+    @t.overload
     def _fetch_native_df(
-        self, query: t.Union[exp.Expression, str], quote_identifiers: bool = False
-    ) -> DF:
+        self,
+        query: t.Union[exp.Expression, str],
+        quote_identifiers: bool = ...,
+        chunksize: None = ...,
+    ) -> pd.DataFrame:
+        ...
+
+    @t.overload
+    def _fetch_native_df(
+        self,
+        query: t.Union[exp.Expression, str],
+        quote_identifiers: bool = ...,
+        *,
+        chunksize: int,
+    ) -> t.Iterator[pd.DataFrame]:
+        ...
+
+    def _fetch_native_df(
+        self,
+        query: t.Union[exp.Expression, str],
+        quote_identifiers: bool = False,
+        chunksize: t.Optional[int] = None,
+    ) -> t.Union[pd.DataFrame, t.Iterator[pd.DataFrame]]:
         """Fetches a Pandas DataFrame from a SQL query."""
         from pandas.io.sql import read_sql_query
 
@@ -153,7 +176,43 @@ class PandasNativeFetchDFSupportMixin(EngineAdapter):
             else query
         )
         logger.debug(f"Executing SQL:\n{sql}")
-        return read_sql_query(sql, self._connection_pool.get())
+        return read_sql_query(
+            sql,
+            self._connection_pool.get(),
+            chunksize=chunksize,
+        )
+
+    @t.overload
+    def fetchdf(
+        self,
+        query: t.Union[exp.Expression, str],
+        quote_identifiers: bool = ...,
+        chunksize: None = ...,
+    ) -> pd.DataFrame:
+        ...
+
+    @t.overload
+    def fetchdf(
+        self,
+        query: t.Union[exp.Expression, str],
+        quote_identifiers: bool = ...,
+        *,
+        chunksize: int,
+    ) -> t.Iterator[pd.DataFrame]:
+        ...
+
+    def fetchdf(
+        self,
+        query: t.Union[exp.Expression, str],
+        quote_identifiers: bool = False,
+        chunksize: t.Optional[int] = None,
+    ) -> t.Union[pd.DataFrame, t.Iterator[pd.DataFrame]]:
+        """Fetches a Pandas DataFrame from the cursor"""
+        return self._fetch_native_df(
+            query,
+            quote_identifiers=quote_identifiers,
+            chunksize=chunksize,
+        )
 
 
 class InsertOverwriteWithMergeMixin(EngineAdapter):
